@@ -3,7 +3,7 @@ const app = express();
 const cors = require("cors");
 const generateFile = require("./generateFile");
 const generateInputFile = require("./generateInputFile");
-const executeCpp = require("./executeCpp");
+const executeCode = require("./executeCode");
 const { aiCodereview } = require("./aiCodereview");
 
 // middlewares
@@ -18,33 +18,34 @@ app.get("/", (req, res) => {
 app.post("/run", async (req, res) => {
   const { language = "cpp", code, input } = req.body;
 
-  if (code === undefined) {
+  if (!code) {
     return res.status(400).json({ error: "Code is required" });
+  }
+  if (!["c", "cpp", "java", "python"].includes(language)) {
+    return res.status(400).json({ error: "Unsupported language" });
   }
 
   try {
-    const filePath = generateFile(language, code); // no await needed (sync fn)
-    const inputFilePath = generateInputFile(input);
-    const output = await executeCpp(filePath, inputFilePath);
+    // New sandboxed execution (no file generation needed)
+    const output = await executeCode(code, input || "", language);
 
-    res.json({ filePath, output });
+    res.json({ output });
   } catch (error) {
-    console.error("Error in /run endpoint:", error); // ← THIS WILL SAVE YOU
+    console.error("Error in /run:", error);
     res.status(500).json({
       error: "Internal server error",
-      message: error.message || String(error),
-      details: error.stderr || null,
+      message: error.message,
     });
   }
 });
 
 app.post("/aiReview", async (req, res) => {
   const { code } = req.body;
-  if(code === undefined) {
+  if (code === undefined) {
     return res.status(400).json({ error: "Code is required" });
   }
 
-  try{
+  try {
     const aiReview = await aiCodereview(code);
     res.json({ aiReview });
   } catch (error) {

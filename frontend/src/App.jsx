@@ -1,20 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 
-const LANGUAGES = [{ label: "C++", value: "cpp" }];
+const LANGUAGES = [
+  { label: "C", value: "c" },
+  { label: "C++", value: "cpp" },
+  { label: "Java", value: "java" },
+  { label: "Python", value: "python" }
+];
 
-const DEFAULT_CODE = `#include <iostream>
-using namespace std;
-
-int main() {
-    cout << "Hello, World!" << endl;
-    return 0;
-}`;
+const DEFAULT_CODE = {
+  c: `#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}`,
+  cpp: `#include <iostream>\nusing namespace std;\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}`,
+  java: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`,
+  python: `print("Hello, World!")`
+};
 
 export default function App() {
   const [language, setLanguage] = useState("cpp");
-  const [code, setCode] = useState(DEFAULT_CODE);
+  const [code, setCode] = useState(DEFAULT_CODE.cpp);
   const [input, setInput] = useState("");
   const [output, setOutput] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -24,6 +28,13 @@ export default function App() {
   const [aiReview, setAiReview] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
+
+  // Update code when language changes
+const handleLanguageChange = (e) => {
+    const newLang = e.target.value;
+    setLanguage(newLang);
+    setCode(DEFAULT_CODE[newLang]);   // Direct update - no effect needed
+  };
 
   // Run Code with custom input
   const handleRun = async () => {
@@ -81,7 +92,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
-      {/* Header - Semantic */}
+      {/* Header */}
       <header className="bg-gray-900 border-b border-gray-700 px-6 py-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">⚡</span>
@@ -103,7 +114,7 @@ export default function App() {
             <select
               id="language-select"
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={handleLanguageChange}
               className="bg-gray-800 border border-gray-600 text-gray-100 text-sm rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
               {LANGUAGES.map((lang) => (
@@ -167,13 +178,15 @@ export default function App() {
           <div className="flex flex-col flex-1 min-h-[400px]">
             <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-t-lg px-4 py-2">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Editor</span>
-              <span className="text-xs text-gray-500 font-mono">main.cpp</span>
+              <span className="text-xs text-gray-500 font-mono">
+                main.{language === "python" ? "py" : language === "java" ? "java" : language}
+              </span>
             </div>
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
               spellCheck={false}
-              aria-label="C++ code editor"
+              aria-label="Code editor"
               className="flex-1 w-full bg-gray-900 text-green-300 font-mono text-sm p-4 border border-t-0 border-gray-700 rounded-b-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed"
               style={{ minHeight: "400px", tabSize: 4 }}
               onKeyDown={(e) => {
@@ -255,7 +268,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* AI Code Review Section - Below Output */}
+        {/* AI Code Review Section */}
         <section aria-labelledby="ai-review-heading" className="mt-2">
           <div className="flex items-center justify-between mb-2 px-1">
             <h2 id="ai-review-heading" className="text-sm font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -274,7 +287,7 @@ export default function App() {
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 min-h-[180px]">
             {!aiReview && !aiLoading && !aiError && (
               <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                <p className="text-gray-500 text-sm">Click <span className="text-violet-400 font-medium">AI Review</span> to get intelligent feedback, improvements, and explanations.</p>
+                <p className="text-gray-500 text-sm">Click <span className="text-violet-400 font-medium">AI Review</span> to get intelligent feedback.</p>
               </div>
             )}
 
