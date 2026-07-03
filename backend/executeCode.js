@@ -1,64 +1,211 @@
-const { exec } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const { spawn } = require("child_process");
 const { v4: uuid } = require("uuid");
+
+const executeProcess = (command, args, cwd, input, timeoutMs) => {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, {
+      cwd,
+      shell: false,
+      windowsHide: true,
+    });
+
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill();
+      resolve({
+        stdout,
+        stderr: stderr || "Execution timed out",
+        error: "Execution timed out",
+        exitCode: null,
+        timedOut: true,
+      });
+    }, timeoutMs);
+
+    child.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      resolve({
+        stdout,
+        stderr: stderr || error.message,
+        error: error.message,
+        exitCode: null,
+        timedOut: false,
+      });
+    });
+
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolve({
+        stdout,
+        stderr,
+        error: code === 0 ? null : "Execution failed",
+        exitCode: code,
+        timedOut,
+      });
+    });
+
+    if (input !== undefined && input !== null) {
+      child.stdin.write(input);
+    }
+    child.stdin.end();
+  });
+};
+
+const cleanupDirectory = async (dir) => {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      if (err.code === "EPERM" || err.code === "EBUSY") {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        continue;
+      }
+      throw err;
+    }
+  }
+  try {
+    fs.rmSync(dir, { recursive: true, force: true });
+  } catch (_) {
+    // best-effort cleanup only
+  }
+};
 
 const executeCode = async (code, input = "", language) => {
   const jobId = uuid();
-  const workDir = `/tmp/coderunner/${jobId}`;
+  const workDir = path.join(os.tmpdir(), "coderunner", jobId);
+  fs.mkdirSync(workDir, { recursive: true });
 
-  let runCommand = "";
+  const sourceFile =
+    language === "cpp"
+      ? path.join(workDir, "main.cpp")
+      : language === "c"
+        ? path.join(workDir, "main.c")
+        : language === "java"
+          ? path.join(workDir, "Main.java")
+          : path.join(workDir, "main.py");
+  const executableFile = path.join(
+    workDir,
+    process.platform === "win32" ? "main.exe" : "main.out",
+  );
 
-  switch (language) {
-    case "cpp":
-      runCommand = `cat > ${workDir}/main.cpp << 'EOF'
-${code}
-EOF
-g++ ${workDir}/main.cpp -o ${workDir}/main && ${workDir}/main`;
-      break;
+  fs.writeFileSync(sourceFile, code, "utf8");
 
-    case "c":
-      runCommand = `cat > ${workDir}/main.c << 'EOF'
-${code}
-EOF
-gcc ${workDir}/main.c -o ${workDir}/main && ${workDir}/main`;
-      break;
-
-    case "java":
-      runCommand = `cat > ${workDir}/Main.java << 'EOF'
-${code}
-EOF
-javac -d ${workDir} ${workDir}/Main.java && java -cp ${workDir} Main`;
-      break;
-
-    case "python":
-      runCommand = `cat > ${workDir}/main.py << 'EOF'
-${code}
-EOF
-python3 ${workDir}/main.py`;
-      break;
-
-    default:
-      throw new Error(`Unsupported language: ${language}`);
-  }
-
-  const fullCommand = `mkdir -p ${workDir} && echo '${input.replace(/'/g, "'\\''")}' | ${runCommand} && rm -rf ${workDir}`;
-
-  return new Promise((resolve) => {
-    exec(fullCommand, { 
-      timeout: 10000,
-      shell: true 
-    }, (error, stdout, stderr) => {
-      if (error) {
-        return resolve({
-          stdout: stdout || "",
-          stderr: stderr || error.message,
-          error: error.message || "Execution failed",
-          exitCode: error.code,
-          timedOut: error.signal === "SIGTERM" || error.code === "ETIMEDOUT"
-        });
+  try {
+    let result;
+    switch (language) {
+      case "cpp": {
+        const compileResult = await executeProcess(
+          "g++",
+          [sourceFile, "-o", executableFile],
+          workDir,
+          "",
+          10000,
+        );
+        if (compileResult.exitCode !== 0) {
+          result = {
+            stdout: compileResult.stdout,
+            stderr: compileResult.stderr || compileResult.error,
+            error: compileResult.error,
+            exitCode: compileResult.exitCode,
+            timedOut: compileResult.timedOut,
+          };
+          break;
+        }
+        result = await executeProcess(
+          executableFile,
+          [],
+          workDir,
+          input,
+          10000,
+        );
+        break;
       }
-      resolve({ stdout, stderr });
-    });
-  });
+      case "c": {
+        const compileResult = await executeProcess(
+          "gcc",
+          [sourceFile, "-o", executableFile],
+          workDir,
+          "",
+          10000,
+        );
+        if (compileResult.exitCode !== 0) {
+          result = {
+            stdout: compileResult.stdout,
+            stderr: compileResult.stderr || compileResult.error,
+            error: compileResult.error,
+            exitCode: compileResult.exitCode,
+            timedOut: compileResult.timedOut,
+          };
+          break;
+        }
+        result = await executeProcess(
+          executableFile,
+          [],
+          workDir,
+          input,
+          10000,
+        );
+        break;
+      }
+      case "java": {
+        const compileResult = await executeProcess(
+          "javac",
+          ["-d", workDir, sourceFile],
+          workDir,
+          "",
+          10000,
+        );
+        if (compileResult.exitCode !== 0) {
+          result = {
+            stdout: compileResult.stdout,
+            stderr: compileResult.stderr || compileResult.error,
+            error: compileResult.error,
+            exitCode: compileResult.exitCode,
+            timedOut: compileResult.timedOut,
+          };
+          break;
+        }
+        result = await executeProcess(
+          "java",
+          ["-cp", workDir, "Main"],
+          workDir,
+          input,
+          10000,
+        );
+        break;
+      }
+      case "python": {
+        result = await executeProcess(
+          process.platform === "win32" ? "python" : "python3",
+          [sourceFile],
+          workDir,
+          input,
+          10000,
+        );
+        break;
+      }
+      default:
+        throw new Error(`Unsupported language: ${language}`);
+    }
+    return result;
+  } finally {
+    await cleanupDirectory(workDir);
+  }
 };
 
 module.exports = executeCode;

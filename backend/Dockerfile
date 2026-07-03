@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-# Install compilers and runtimes
+# Install compilers and runtimes needed by the sandboxed code runner
 RUN apk update && apk add --no-cache \
     g++ \
     gcc \
@@ -11,15 +11,20 @@ RUN apk update && apk add --no-cache \
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better layer caching
 COPY package*.json ./
+RUN npm install --omit=dev --no-audit --no-fund
 
-# Use npm install instead of ci for now
-RUN npm install --production
-
-# Copy the rest of the application
+# Copy the full app source
 COPY . .
 
-EXPOSE 3000
+# Run as a non-root user for safer container execution
+RUN addgroup -S app && adduser -S app -G app && chown -R app:app /app
+USER app
 
-CMD ["node", "index.js"]
+ENV NODE_ENV=production
+ENV PORT=4000
+
+EXPOSE 4000
+
+CMD ["node", "server.js"]

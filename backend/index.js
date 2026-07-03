@@ -1,62 +1,93 @@
+const dotenv = require("dotenv");
+dotenv.config();
+
 const express = require("express");
-const app = express();
 const cors = require("cors");
-const generateFile = require("./generateFile");
-const generateInputFile = require("./generateInputFile");
+const cookieParser = require("cookie-parser");
+const connectDB = require("./config/db");
+const authRoutes = require("./routes/authRoutes");
+const problemRoutes = require("./routes/problemRoutes");
+const submissionRoutes = require("./routes/submissionRoutes");
+const userRoutes = require("./routes/userRoutes");
 const executeCode = require("./executeCode");
+const auth = require("./middleware/auth");
+const { aiReviewRateLimit } = require("./middleware/rateLimit");
+const { aiReviewQueue, aiReviewQueueEvents } = require("./jobs/aiReviewJob");
+
 const { aiCodereview } = require("./aiCodereview");
 
-// middlewares
-app.use(cors());
+connectDB();
+
+const app = express();
+
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.send("Hello, World! CodeRunner backend with custom input is running.");
 });
 
-app.post("/run", async (req, res) => {
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/problems", problemRoutes);
+app.use("/api/submissions", submissionRoutes);
+
+app.post("/api/compiler/run", async (req, res) => {
   const { language = "cpp", code, input } = req.body;
-
   if (!code) {
-    return res.status(400).json({ error: "Code is required" });
+    return res.status(400).json({ message: "Code is required" });
   }
-  if (!["c", "cpp", "java", "python"].includes(language)) {
-    return res.status(400).json({ error: "Unsupported language" });
-  }
-
   try {
-    // New sandboxed execution (no file generation needed)
     const output = await executeCode(code, input || "", language);
-
     res.json({ output });
   } catch (error) {
-    console.error("Error in /run:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message,
-    });
+    console.error("Error in /api/compiler/run:", error);
+    res.status(500).json({ message: error.message || "Internal server error" });
   }
 });
 
-app.post("/aiReview", async (req, res) => {
+const handleAiReview = async (req, res) => {
   const { code } = req.body;
-  if (code === undefined) {
-    return res.status(400).json({ error: "Code is required" });
+  if (!code) {
+    return res.status(400).json({ message: "Code is required" });
   }
 
   try {
-    const aiReview = await aiCodereview(code);
-    res.json({ aiReview });
-  } catch (error) {
-    console.error("Error in /aiReview endpoint:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message || String(error),
+    const job = await aiReviewQueue.add("review", {
+      code,
+      userId: req.user?._id?.toString() || "anonymous",
     });
-  }
-});
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
+    const result = await job.waitUntilFinished(aiReviewQueueEvents);
+    res.json({ aiReview: result.review });
+  } catch (error) {
+    console.error("Error in AI review queue:", error);
+    res.status(500).json({ message: error.message || "AI review failed" });
+  }
+};
+
+app.post("/api/compiler/aiReview", auth, aiReviewRateLimit, handleAiReview);
+app.post("/aiReview", auth, aiReviewRateLimit, handleAiReview);
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
