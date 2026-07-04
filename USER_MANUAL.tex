@@ -1,0 +1,514 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  urlcolor=blue!60!black,
+  pdftitle={Codefied User Manual},
+  pdfauthor={Codefied}
+}
+
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codeframe}{RGB}{200,200,200}
+
+\lstdefinestyle{terminal}{
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible
+}
+
+\newcommand{\appurl}{\texttt{https://codefied-****.vercel.app}}
+
+\title{\textbf{Codefied --- User Manual}}
+\author{Online Judge Platform}
+\date{July 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+\textbf{Codefied} is a web-based online judge and coding platform. It lets you:
+\begin{itemize}[noitemsep]
+  \item Create an account and sign in securely (HTTP-only session cookies).
+  \item Browse and solve coding problems with sample and hidden test cases.
+  \item Run code in a standalone \textbf{Code Runner} (C, C++, Java, Python).
+  \item Request \textbf{AI-powered code review} (Google Gemini).
+  \item Track solved problems on your \textbf{Profile} and \textbf{Dashboard}.
+  \item Review past verdicts on the \textbf{Submissions} page.
+  \item Compare rankings on the \textbf{Leaderboard}.
+\end{itemize}
+
+\textbf{Live application (masked):} \appurl\\
+\textit{Production URL: \texttt{https://codefied-nine.vercel.app}}
+
+\textbf{Supported browsers:} Latest Chrome, Firefox, Edge, or Safari with JavaScript enabled.
+
+\section{Getting Started}
+
+\subsection{Register a New Account}
+\begin{enumerate}
+  \item Open \appurl
+  \item You are redirected to \textbf{Login} if not signed in.
+  \item Click \textbf{Register}.
+  \item Fill in:
+  \begin{itemize}[noitemsep]
+    \item \textbf{Handle} --- unique username shown on leaderboard.
+    \item \textbf{Email} --- used for login.
+    \item \textbf{Password} --- minimum 6 characters.
+    \item \textbf{Confirm Password} --- must match password.
+  \end{itemize}
+  \item Click \textbf{Register}. On success you are taken to the \textbf{Dashboard}.
+\end{enumerate}
+
+\textbf{Validation rules:}
+\begin{itemize}[noitemsep]
+  \item All fields are required.
+  \item Passwords must match.
+  \item Handle and email must be unique (``User already exists'' if taken).
+\end{itemize}
+
+\subsection{Login}
+\begin{enumerate}
+  \item Open \appurl
+  \item Enter \textbf{Email or handle} and \textbf{Password}.
+  \item Click \textbf{Login}.
+  \item You are redirected to the \textbf{Dashboard}.
+\end{enumerate}
+
+\textbf{Tip:} You can log in with either your email \emph{or} your handle.
+
+\subsection{Session and Authentication}
+Codefied stores your session in \textbf{HTTP-only cookies} (not \texttt{localStorage}). After login, your browser keeps you signed in automatically and refreshes tokens in the background.
+
+\textbf{What this means for you:}
+\begin{itemize}[noitemsep]
+  \item You do \textbf{not} need to change how you use the site --- log in and browse as usual.
+  \item Cookies are sent automatically with each request; no manual token handling is required.
+  \item Use \textbf{Logout} to end your session on the current browser.
+  \item If you clear browser cookies, you will need to log in again.
+\end{itemize}
+
+\subsection{Logout}
+Click \textbf{Logout} in the top-right navbar. You return to the login page.
+
+\section{Navigation Overview}
+
+After login, the navbar provides:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Link} & \textbf{Purpose} \\
+\midrule
+Codefied (logo) & Dashboard home \\
+Problems        & List all coding problems with progress stats \\
+Code Runner     & Standalone compiler + AI review \\
+Profile         & Your stats and account info \\
+Leaderboard     & Top 50 solvers by unique problems solved \\
+Submissions     & Your submission history and verdict details \\
+Add Problem     & \textbf{Admin only} --- create new problems \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Dashboard}
+
+The Dashboard welcomes you by handle and shows your progress at a glance:
+
+\begin{itemize}[noitemsep]
+  \item \textbf{Solved} --- unique problems you have accepted (green).
+  \item \textbf{Open} --- problems not yet solved.
+  \item \textbf{Total} --- all available problems.
+\end{itemize}
+
+Quick-access cards include:
+\begin{itemize}[noitemsep]
+  \item \textbf{Problems} --- solve challenges with run/submit workflow.
+  \item \textbf{Code Runner} --- free-form coding with AI review.
+  \item \textbf{Profile} --- view solved count, handle, email.
+  \item \textbf{Leaderboard} --- see top performers.
+  \item \textbf{Submissions} --- review past verdicts and test case results.
+  \item \textbf{Add Problem} --- visible only if your account has \texttt{admin} role.
+\end{itemize}
+
+Stats refresh when you return to the Dashboard (e.g.\ after solving a problem).
+
+\section{Problems}
+
+\subsection{Browse Problems}
+\begin{enumerate}
+  \item Click \textbf{Problems} in the navbar.
+  \item View the header stats: \textbf{Solved}, \textbf{Open}, and \textbf{Total}.
+  \item Browse the list showing title, difficulty badge, and optional \textbf{tags}.
+  \item Solved problems display a green border and a \textbf{✓ Solved} badge; unsolved problems show \textbf{Open}.
+  \item Click a problem to open its detail page.
+\end{enumerate}
+
+\subsection{Problem Detail Page Layout}
+The page is split into two panels:
+
+\textbf{Left panel --- Problem statement}
+\begin{itemize}[noitemsep]
+  \item Title and difficulty (\texttt{Easy}, \texttt{Medium}, \texttt{Hard}).
+  \item Description (Markdown supported).
+  \item Constraints, time limit (ms), memory limit (MB).
+  \item Tags (if configured).
+  \item Sample test cases (input and expected output).
+\end{itemize}
+
+\textbf{Right panel --- Code editor}
+\begin{itemize}[noitemsep]
+  \item Monaco code editor with syntax highlighting.
+  \item Language selector: C, C++, Java, Python.
+  \item Custom input area (for Run).
+  \item \textbf{Run} and \textbf{Submit} buttons.
+  \item Results panel showing pass/fail per test case and overall verdict.
+\end{itemize}
+
+\subsection{Monaco Editor (LeetCode-Style)}
+The code editor behaves like a standard IDE:
+\begin{itemize}[noitemsep]
+  \item \textbf{Arrow keys} move the cursor normally.
+  \item \textbf{Delete} and \textbf{Backspace} edit text as expected.
+  \item Tab inserts spaces; bracket and quote auto-closing are enabled.
+  \item Line numbers, syntax highlighting, and folding are available.
+\end{itemize}
+
+You can click inside the editor and type immediately without special shortcuts.
+
+\subsection{Run (Sample Tests)}
+\textbf{Purpose:} Test your code against \textbf{sample} cases before final submission.
+
+\begin{enumerate}
+  \item Write or edit code in the editor.
+  \item Optionally enter custom input (overrides default sample input).
+  \item Select language.
+  \item Click \textbf{Run}.
+  \item Review results: passed count, per-case input/output, pass/fail status.
+\end{enumerate}
+
+\textbf{Run does not} affect leaderboard or store a graded submission against hidden tests.
+
+\subsection{Submit (Hidden Tests)}
+\textbf{Purpose:} Grade your solution against \textbf{hidden} test cases stored on the server.
+
+\begin{enumerate}
+  \item Finalize your solution in the editor.
+  \item Select language.
+  \item Click \textbf{Submit}.
+  \item Results show how many hidden cases passed and the overall \textbf{verdict}.
+  \item A submission record is saved to your \textbf{Submissions} history.
+\end{enumerate}
+
+\textbf{Submit verdicts:}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Verdict} & \textbf{Meaning} \\
+\midrule
+\texttt{accepted}              & All hidden test cases passed \\
+\texttt{wrong-answer}          & Output did not match expected on at least one case \\
+\texttt{time-limit-exceeded}   & Program exceeded the problem's time limit \\
+\texttt{compile-error}         & Code failed to compile \\
+\texttt{runtime-error}         & Program crashed or exited with an error \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Accepted submissions} count toward your Profile solved count and Leaderboard ranking (\textbf{unique problems only}).
+
+\subsection{Re-Submitting a Solved Problem}
+If you submit an \texttt{accepted} solution for a problem you have \textbf{already solved}, your score does \textbf{not} change. The result panel shows:
+
+\begin{itemize}[noitemsep]
+  \item \texttt{✓ Accepted --- already solved, score unchanged.} when \texttt{newlySolved} is false.
+  \item \texttt{✓ Accepted --- counts toward your solved total!} on your \textbf{first} accepted submission for that problem.
+\end{itemize}
+
+Each submission is still recorded in your history for reference.
+
+\subsection{Supported Languages (Problems)}
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Language} & \textbf{Notes} \\
+\midrule
+C      & Compiled with \texttt{gcc}; program file \texttt{main.c} \\
+C++    & Compiled with \texttt{g++}; program file \texttt{main.cpp} \\
+Java   & Class must be named \texttt{Main}; compiled with \texttt{javac} \\
+Python & Executed with \texttt{python3} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Submissions}
+
+The \textbf{Submissions} page (\texttt{/submissions}) shows your full submission history across all problems.
+
+\subsection{Submission List}
+\begin{itemize}[noitemsep]
+  \item Columns: \textbf{Problem}, \textbf{Verdict}, \textbf{Language}, \textbf{Tests} (passed/total), \textbf{When}.
+  \item Verdicts are color-coded (green accepted, red wrong answer, orange TLE, etc.).
+  \item Click any row to open the \textbf{detail modal}.
+  \item Click a problem title to jump to that problem (without closing navigation).
+\end{itemize}
+
+\subsection{Submission Detail Modal}
+Clicking a submission opens a modal showing:
+\begin{itemize}[noitemsep]
+  \item Problem title, verdict, language, and timestamp.
+  \item Your submitted \textbf{source code}.
+  \item Per-test-case results with expected vs.\ actual output on failures.
+  \item Close with the \textbf{✕} button or by clicking outside the modal.
+\end{itemize}
+
+\section{Code Runner}
+
+The \textbf{Code Runner} is a sandboxed online compiler independent of the problem judge.
+
+\subsection{Features}
+\begin{itemize}[noitemsep]
+  \item Language switch: C, C++, Java, Python (default templates provided).
+  \item Monaco editor for writing code (arrow keys and delete work normally).
+  \item Custom stdin input.
+  \item \textbf{Run Code} --- compile/execute and show stdout/stderr.
+  \item \textbf{AI Review} --- Gemini-powered feedback on your code (rate limited).
+\end{itemize}
+
+\subsection{How to Run Code}
+\begin{enumerate}
+  \item Navigate to \textbf{Code Runner}.
+  \item Select a language (editor loads a Hello World template).
+  \item Write your program.
+  \item Enter input in the input box (optional).
+  \item Click \textbf{Run Code}.
+  \item View output or compilation/runtime errors in the output panel.
+\end{enumerate}
+
+\subsection{AI Code Review}
+\begin{enumerate}
+  \item Write code in the editor.
+  \item Click \textbf{AI Review}.
+  \item Wait for the review (processed \textbf{directly} by the server --- no background queue).
+  \item Read Markdown-formatted feedback in the review panel.
+\end{enumerate}
+
+\textbf{Rate limits (per user):}
+\begin{itemize}[noitemsep]
+  \item \textbf{2 reviews per hour}
+  \item \textbf{8 reviews per day}
+\end{itemize}
+
+If exceeded, you receive: ``Hourly/Daily AI review limit exceeded.''
+
+\subsection{Execution Timeout}
+On the \textbf{Code Runner}, code execution times out after \textbf{10 seconds} per run. Long-running loops may show ``Execution timed out.''
+
+\textbf{On problem Submit/Run}, the timeout uses each problem's configured \textbf{time limit} (in milliseconds), not a fixed 10-second cap. Check the problem statement for the exact limit (e.g.\ 1000\,ms = 1 second).
+
+\section{Profile}
+
+The Profile page shows:
+\begin{itemize}[noitemsep]
+  \item Handle
+  \item Email
+  \item Role (\texttt{user} or \texttt{admin})
+  \item \textbf{Solved count} --- number of unique problems with at least one \texttt{accepted} submission
+\end{itemize}
+
+\section{Leaderboard}
+
+The Leaderboard ranks users by \textbf{unique problems solved} (accepted submissions only). Solving the same problem multiple times does \textbf{not} increase your rank.
+
+\begin{itemize}[noitemsep]
+  \item Shows top \textbf{50} users.
+  \item Displays handle, email, and solved count.
+  \item Sorted by solved count (highest first).
+\end{itemize}
+
+\section{Admin: Add Problem}
+
+Available only when logged in as \textbf{admin}.
+
+\subsection{Create a Problem}
+\begin{enumerate}
+  \item Dashboard or navbar $\rightarrow$ \textbf{Add Problem}.
+  \item Fill in:
+  \begin{itemize}[noitemsep]
+    \item Title, description (Markdown).
+    \item Difficulty: easy / medium / hard.
+    \item Constraints, time limit (ms), memory limit (MB).
+    \item Tags (comma-separated).
+    \item \textbf{Sample cases} --- visible to users on Run.
+    \item \textbf{Hidden cases} --- used only on Submit.
+  \end{itemize}
+  \item Add/remove multiple sample and hidden cases with \textbf{+ Add} / \textbf{Remove}.
+  \item Submit the form.
+\end{enumerate}
+
+Hidden test cases are stored separately and never shown to regular users before submission.
+
+\subsection{Optional: Seed Script}
+Administrators can optionally populate the database with sample problems using the backend seed script:
+
+\begin{lstlisting}[style=terminal]
+cd backend
+node scripts/seedProblems.js
+\end{lstlisting}
+
+Requires \texttt{MONGO\_URI} in \texttt{backend/.env}. The script upserts bundled problems with sample and hidden test cases and can reset admin credentials. This is optional --- problems can also be created manually via \textbf{Add Problem}.
+
+\section{Understanding Results}
+
+\subsection{Run / Submit Result Format}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lp{8.5cm}@{}}
+\toprule
+\textbf{Field} & \textbf{Meaning} \\
+\midrule
+\texttt{passed} / \texttt{total} & Number of test cases passed \\
+\texttt{results[]} & Per-case input, expected output, actual output, \texttt{passed} boolean, per-case \texttt{verdict} \\
+\texttt{status}   & \texttt{sample} (Run) or \texttt{submit} (Submit) \\
+\texttt{verdict}  & Overall submission verdict (see Submit verdicts table) \\
+\texttt{accepted} & \texttt{true} if verdict is \texttt{accepted} \\
+\texttt{newlySolved} & \texttt{true} only on first accepted solve for that problem \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Common Output Messages}
+\begin{itemize}[noitemsep]
+  \item \textbf{Compilation errors} --- verdict \texttt{compile-error}; details in stderr (e.g.\ syntax error, missing semicolon).
+  \item \textbf{Wrong answer} --- verdict \texttt{wrong-answer}; output does not match expected (whitespace-trimmed comparison).
+  \item \textbf{Time limit exceeded} --- verdict \texttt{time-limit-exceeded}; program exceeded the problem's time limit.
+  \item \textbf{Runtime error} --- verdict \texttt{runtime-error}; program crashed or exited abnormally.
+  \item \textbf{Execution timed out} --- on Code Runner (10\,s) or when a problem's time limit is exceeded.
+  \item \textbf{Already solved, score unchanged} --- re-submitted accepted solution for a previously solved problem.
+  \item \textbf{Invalid credentials} --- wrong email/handle or password at login.
+\end{itemize}
+
+\section{User FAQ and Troubleshooting}
+
+\begin{longtable}{@{}p{4cm}p{8.8cm}@{}}
+\toprule
+\textbf{Issue} & \textbf{What to do} \\
+\midrule
+\endhead
+Login failed &
+Verify email/handle and password; register first if new to production site. Clear cookies for the site and try again. Ensure third-party cookie blocking is not preventing session cookies on the production domain. \\
+\addlinespace
+Cannot stay logged in &
+Session uses HTTP-only cookies. Do not block cookies for \appurl{}. Try a normal (non-incognito) window if sessions drop immediately. \\
+\addlinespace
+Server slow or unreachable &
+The backend may be waking from sleep on free-tier hosting. Wait 30--60 seconds and refresh. Check your internet connection. If the page shows ``Loading\ldots'' indefinitely, retry later or contact the administrator. \\
+\addlinespace
+Page shows Loading forever &
+Refresh; check internet; site may be temporarily unavailable or the API server may be starting up. \\
+\addlinespace
+Run returns empty output &
+Ensure your program prints to stdout; check language template (e.g.\ Java needs \texttt{Main} class) \\
+\addlinespace
+Submit always wrong answer &
+Compare sample cases carefully; hidden cases may cover edge cases \\
+\addlinespace
+Time limit exceeded on Submit &
+Optimize your solution or check the problem's stated time limit (ms) \\
+\addlinespace
+Re-submit did not increase solved count &
+Expected behavior --- only your \textbf{first} accepted solve per problem counts toward stats and leaderboard \\
+\addlinespace
+AI Review failed &
+Wait and retry; check rate limits (2/hour, 8/day) \\
+\addlinespace
+Cannot see Add Problem &
+Feature is admin-only; contact platform administrator \\
+\addlinespace
+C++ code won't compile &
+Use standard \texttt{main.cpp} structure; avoid non-standard libraries \\
+\addlinespace
+Editor keys not working &
+Click inside the Monaco editor first to focus it; arrow keys and delete should then work normally \\
+\bottomrule
+\caption{User troubleshooting guide}
+\end{longtable}
+
+\appendix
+\section{Quick User Cheat Sheet}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Task} & \textbf{Steps} \\
+\midrule
+Register & \appurl{} $\rightarrow$ Register $\rightarrow$ fill form \\
+Login    & Email or handle + password (session stored in cookies) \\
+Solve problem & Problems $\rightarrow$ pick one $\rightarrow$ Run $\rightarrow$ Submit \\
+Check progress & Dashboard or Problems $\rightarrow$ Solved / Open / Total \\
+View history  & Submissions $\rightarrow$ click row for detail modal \\
+Free compile  & Code Runner $\rightarrow$ write code $\rightarrow$ Run Code \\
+AI feedback   & Code Runner $\rightarrow$ AI Review (max 2/hr, 8/day) \\
+Check rank    & Leaderboard (unique problems solved) \\
+Check profile & Profile $\rightarrow$ solved count \\
+Logout        & Navbar $\rightarrow$ Logout \\
+\bottomrule
+\end{tabular}
+\caption{One-page user cheat sheet}
+\end{table}
+
+\section{Route Map (Logged-In User)}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{URL Path} & \textbf{Page} \\
+\midrule
+\texttt{/login}              & Login \\
+\texttt{/register}            & Register \\
+\texttt{/dashboard}          & Dashboard \\
+\texttt{/problems}            & Problem list with solved/open/total stats \\
+\texttt{/problems/:id}       & Problem detail + editor \\
+\texttt{/coderunner}          & Standalone compiler \\
+\texttt{/profile}            & User profile \\
+\texttt{/leaderboard}        & Leaderboard \\
+\texttt{/submissions}        & Submission history + detail modal \\
+\texttt{/dashboard/add-problem} & Add problem (admin) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vfill
+\begin{center}
+\small\textit{Codefied User Manual --- production URLs are masked for documentation purposes.}
+\end{center}
+
+\end{document}
