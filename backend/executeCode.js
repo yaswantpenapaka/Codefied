@@ -100,12 +100,16 @@ const markCompileTimeout = (result) => {
   return result;
 };
 
-const executeCode = async (code, input = "", language, runTimeoutMs = 10000) => {
-  const compileTimeoutMs = COMPILE_TIMEOUT_MS;
-  const jobId = uuid();
-  const workDir = path.join(os.tmpdir(), "coderunner", jobId);
-  fs.mkdirSync(workDir, { recursive: true });
+const toCompileFailure = (compileResult) => ({
+  stdout: compileResult.stdout,
+  stderr: compileResult.stderr || compileResult.error,
+  error: compileResult.error,
+  exitCode: compileResult.exitCode,
+  timedOut: compileResult.timedOut,
+  phase: compileResult.phase,
+});
 
+const getJobPaths = (workDir, language) => {
   const sourceFile =
     language === "cpp"
       ? path.join(workDir, "main.cpp")
@@ -118,126 +122,143 @@ const executeCode = async (code, input = "", language, runTimeoutMs = 10000) => 
     workDir,
     process.platform === "win32" ? "main.exe" : "main.out",
   );
+  return { sourceFile, executableFile };
+};
 
+const compileJob = async (workDir, language, compileTimeoutMs) => {
+  const { sourceFile, executableFile } = getJobPaths(workDir, language);
+
+  switch (language) {
+    case "cpp":
+      return markCompileTimeout(
+        await executeProcess(
+          "g++",
+          [sourceFile, "-o", executableFile],
+          workDir,
+          "",
+          compileTimeoutMs,
+          "Compilation timed out",
+        ),
+      );
+    case "c":
+      return markCompileTimeout(
+        await executeProcess(
+          "gcc",
+          [sourceFile, "-o", executableFile],
+          workDir,
+          "",
+          compileTimeoutMs,
+          "Compilation timed out",
+        ),
+      );
+    case "java":
+      return markCompileTimeout(
+        await executeProcess(
+          "javac",
+          ["-d", workDir, sourceFile],
+          workDir,
+          "",
+          compileTimeoutMs,
+          "Compilation timed out",
+        ),
+      );
+    case "python":
+      return { exitCode: 0, timedOut: false };
+    default:
+      throw new Error(`Unsupported language: ${language}`);
+  }
+};
+
+const runCompiledJob = async (
+  workDir,
+  language,
+  input,
+  runTimeoutMs,
+  executableFile,
+) => {
+  switch (language) {
+    case "cpp":
+    case "c":
+      return executeProcess(
+        executableFile,
+        [],
+        workDir,
+        input,
+        runTimeoutMs,
+        "Execution timed out",
+      );
+    case "java":
+      return executeProcess(
+        "java",
+        ["-cp", workDir, "Main"],
+        workDir,
+        input,
+        runTimeoutMs,
+        "Execution timed out",
+      );
+    case "python": {
+      const { sourceFile } = getJobPaths(workDir, language);
+      return executeProcess(
+        process.platform === "win32" ? "python" : "python3",
+        [sourceFile],
+        workDir,
+        input,
+        runTimeoutMs,
+        "Execution timed out",
+      );
+    }
+    default:
+      throw new Error(`Unsupported language: ${language}`);
+  }
+};
+
+const executeCode = async (code, input = "", language, runTimeoutMs = 10000) => {
+  const [result] = await executeCodeCases(
+    code,
+    [input],
+    language,
+    runTimeoutMs,
+  );
+  return result;
+};
+
+const executeCodeCases = async (
+  code,
+  inputs,
+  language,
+  runTimeoutMs = 10000,
+) => {
+  const compileTimeoutMs = COMPILE_TIMEOUT_MS;
+  const jobId = uuid();
+  const workDir = path.join(os.tmpdir(), "coderunner", jobId);
+  fs.mkdirSync(workDir, { recursive: true });
+
+  const { sourceFile, executableFile } = getJobPaths(workDir, language);
   fs.writeFileSync(sourceFile, code, "utf8");
 
   try {
-    let result;
-    switch (language) {
-      case "cpp": {
-        const compileResult = markCompileTimeout(
-          await executeProcess(
-            "g++",
-            [sourceFile, "-o", executableFile],
-            workDir,
-            "",
-            compileTimeoutMs,
-            "Compilation timed out",
-          ),
-        );
-        if (compileResult.exitCode !== 0 || compileResult.timedOut) {
-          result = {
-            stdout: compileResult.stdout,
-            stderr: compileResult.stderr || compileResult.error,
-            error: compileResult.error,
-            exitCode: compileResult.exitCode,
-            timedOut: compileResult.timedOut,
-            phase: compileResult.phase,
-          };
-          break;
-        }
-        result = await executeProcess(
-          executableFile,
-          [],
-          workDir,
-          input,
-          runTimeoutMs,
-          "Execution timed out",
-        );
-        break;
-      }
-      case "c": {
-        const compileResult = markCompileTimeout(
-          await executeProcess(
-            "gcc",
-            [sourceFile, "-o", executableFile],
-            workDir,
-            "",
-            compileTimeoutMs,
-            "Compilation timed out",
-          ),
-        );
-        if (compileResult.exitCode !== 0 || compileResult.timedOut) {
-          result = {
-            stdout: compileResult.stdout,
-            stderr: compileResult.stderr || compileResult.error,
-            error: compileResult.error,
-            exitCode: compileResult.exitCode,
-            timedOut: compileResult.timedOut,
-            phase: compileResult.phase,
-          };
-          break;
-        }
-        result = await executeProcess(
-          executableFile,
-          [],
-          workDir,
-          input,
-          runTimeoutMs,
-          "Execution timed out",
-        );
-        break;
-      }
-      case "java": {
-        const compileResult = markCompileTimeout(
-          await executeProcess(
-            "javac",
-            ["-d", workDir, sourceFile],
-            workDir,
-            "",
-            compileTimeoutMs,
-            "Compilation timed out",
-          ),
-        );
-        if (compileResult.exitCode !== 0 || compileResult.timedOut) {
-          result = {
-            stdout: compileResult.stdout,
-            stderr: compileResult.stderr || compileResult.error,
-            error: compileResult.error,
-            exitCode: compileResult.exitCode,
-            timedOut: compileResult.timedOut,
-            phase: compileResult.phase,
-          };
-          break;
-        }
-        result = await executeProcess(
-          "java",
-          ["-cp", workDir, "Main"],
-          workDir,
-          input,
-          runTimeoutMs,
-          "Execution timed out",
-        );
-        break;
-      }
-      case "python": {
-        result = await executeProcess(
-          process.platform === "win32" ? "python" : "python3",
-          [sourceFile],
-          workDir,
-          input,
-          runTimeoutMs,
-          "Execution timed out",
-        );
-        break;
-      }
-      default:
-        throw new Error(`Unsupported language: ${language}`);
+    const compileResult = await compileJob(workDir, language, compileTimeoutMs);
+    if (compileResult.exitCode !== 0 || compileResult.timedOut) {
+      const failure = toCompileFailure(compileResult);
+      return [failure];
     }
-    return result;
+
+    const results = [];
+    for (const input of inputs) {
+      const result = await runCompiledJob(
+        workDir,
+        language,
+        input,
+        runTimeoutMs,
+        executableFile,
+      );
+      results.push(result);
+    }
+    return results;
   } finally {
     await cleanupDirectory(workDir);
   }
 };
 
 module.exports = executeCode;
+module.exports.executeCodeCases = executeCodeCases;

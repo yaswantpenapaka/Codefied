@@ -1,7 +1,7 @@
 const Problem = require("../models/Problem");
 const TestCase = require("../models/TestCase");
 const Submission = require("../models/Submission");
-const executeCode = require("../executeCode");
+const { executeCodeCases } = require("../executeCode");
 const {
   VERDICTS,
   resolveCaseVerdict,
@@ -13,8 +13,16 @@ const runCases = async (cases, code, language, timeLimitMs) => {
   const caseVerdicts = [];
   let passed = 0;
 
-  for (const tc of cases) {
-    const output = await executeCode(code, tc.input, language, timeLimitMs);
+  const outputs = await executeCodeCases(
+    code,
+    cases.map((tc) => tc.input),
+    language,
+    timeLimitMs,
+  );
+
+  for (let i = 0; i < cases.length; i += 1) {
+    const tc = cases[i];
+    const output = outputs[i] || outputs[0];
     const actual = output.stdout || output.stderr || "";
     const caseVerdict = resolveCaseVerdict(output, tc.expectedOutput);
     const matched = caseVerdict === VERDICTS.ACCEPTED;
