@@ -6,7 +6,10 @@ const os = require("os");
 const { spawn } = require("child_process");
 const { v4: uuid } = require("uuid");
 
-const executeProcess = (command, args, cwd, input, timeoutMs) => {
+const COMPILE_TIMEOUT_MS =
+  Number(process.env.COMPILE_TIMEOUT_MS) || 15000;
+
+const executeProcess = (command, args, cwd, input, timeoutMs, timeoutMessage) => {
   return new Promise((resolve) => {
     const child = spawn(command, args, {
       cwd,
@@ -21,10 +24,11 @@ const executeProcess = (command, args, cwd, input, timeoutMs) => {
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill();
+      const message = timeoutMessage || "Execution timed out";
       resolve({
         stdout,
-        stderr: stderr || "Execution timed out",
-        error: "Execution timed out",
+        stderr: stderr || message,
+        error: message,
         exitCode: null,
         timedOut: true,
       });
@@ -87,7 +91,17 @@ const cleanupDirectory = async (dir) => {
   }
 };
 
-const executeCode = async (code, input = "", language, timeoutMs = 10000) => {
+const markCompileTimeout = (result) => {
+  if (result.timedOut) {
+    result.error = "Compilation timed out";
+    result.stderr = result.stderr || "Compilation timed out";
+    result.phase = "compile";
+  }
+  return result;
+};
+
+const executeCode = async (code, input = "", language, runTimeoutMs = 10000) => {
+  const compileTimeoutMs = COMPILE_TIMEOUT_MS;
   const jobId = uuid();
   const workDir = path.join(os.tmpdir(), "coderunner", jobId);
   fs.mkdirSync(workDir, { recursive: true });
@@ -111,20 +125,24 @@ const executeCode = async (code, input = "", language, timeoutMs = 10000) => {
     let result;
     switch (language) {
       case "cpp": {
-        const compileResult = await executeProcess(
-          "g++",
-          [sourceFile, "-o", executableFile],
-          workDir,
-          "",
-          timeoutMs,
+        const compileResult = markCompileTimeout(
+          await executeProcess(
+            "g++",
+            [sourceFile, "-o", executableFile],
+            workDir,
+            "",
+            compileTimeoutMs,
+            "Compilation timed out",
+          ),
         );
-        if (compileResult.exitCode !== 0) {
+        if (compileResult.exitCode !== 0 || compileResult.timedOut) {
           result = {
             stdout: compileResult.stdout,
             stderr: compileResult.stderr || compileResult.error,
             error: compileResult.error,
             exitCode: compileResult.exitCode,
             timedOut: compileResult.timedOut,
+            phase: compileResult.phase,
           };
           break;
         }
@@ -133,25 +151,30 @@ const executeCode = async (code, input = "", language, timeoutMs = 10000) => {
           [],
           workDir,
           input,
-          timeoutMs,
+          runTimeoutMs,
+          "Execution timed out",
         );
         break;
       }
       case "c": {
-        const compileResult = await executeProcess(
-          "gcc",
-          [sourceFile, "-o", executableFile],
-          workDir,
-          "",
-          timeoutMs,
+        const compileResult = markCompileTimeout(
+          await executeProcess(
+            "gcc",
+            [sourceFile, "-o", executableFile],
+            workDir,
+            "",
+            compileTimeoutMs,
+            "Compilation timed out",
+          ),
         );
-        if (compileResult.exitCode !== 0) {
+        if (compileResult.exitCode !== 0 || compileResult.timedOut) {
           result = {
             stdout: compileResult.stdout,
             stderr: compileResult.stderr || compileResult.error,
             error: compileResult.error,
             exitCode: compileResult.exitCode,
             timedOut: compileResult.timedOut,
+            phase: compileResult.phase,
           };
           break;
         }
@@ -160,25 +183,30 @@ const executeCode = async (code, input = "", language, timeoutMs = 10000) => {
           [],
           workDir,
           input,
-          timeoutMs,
+          runTimeoutMs,
+          "Execution timed out",
         );
         break;
       }
       case "java": {
-        const compileResult = await executeProcess(
-          "javac",
-          ["-d", workDir, sourceFile],
-          workDir,
-          "",
-          timeoutMs,
+        const compileResult = markCompileTimeout(
+          await executeProcess(
+            "javac",
+            ["-d", workDir, sourceFile],
+            workDir,
+            "",
+            compileTimeoutMs,
+            "Compilation timed out",
+          ),
         );
-        if (compileResult.exitCode !== 0) {
+        if (compileResult.exitCode !== 0 || compileResult.timedOut) {
           result = {
             stdout: compileResult.stdout,
             stderr: compileResult.stderr || compileResult.error,
             error: compileResult.error,
             exitCode: compileResult.exitCode,
             timedOut: compileResult.timedOut,
+            phase: compileResult.phase,
           };
           break;
         }
@@ -187,7 +215,8 @@ const executeCode = async (code, input = "", language, timeoutMs = 10000) => {
           ["-cp", workDir, "Main"],
           workDir,
           input,
-          timeoutMs,
+          runTimeoutMs,
+          "Execution timed out",
         );
         break;
       }
@@ -197,7 +226,8 @@ const executeCode = async (code, input = "", language, timeoutMs = 10000) => {
           [sourceFile],
           workDir,
           input,
-          timeoutMs,
+          runTimeoutMs,
+          "Execution timed out",
         );
         break;
       }

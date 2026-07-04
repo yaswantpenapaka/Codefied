@@ -11,6 +11,13 @@ const normalizeOutput = (stdout, stderr) =>
   (stdout || stderr || "").trim();
 
 const resolveCaseVerdict = (output, expectedOutput) => {
+  if (
+    output.timedOut &&
+    (output.error === "Compilation timed out" || output.phase === "compile")
+  ) {
+    return VERDICTS.COMPILE_ERROR;
+  }
+
   if (output.timedOut || output.error === "Execution timed out") {
     return VERDICTS.TIME_LIMIT_EXCEEDED;
   }
