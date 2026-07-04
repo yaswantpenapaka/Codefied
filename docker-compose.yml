@@ -12,8 +12,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: codefied-redis
-    ports:
-      - "6379:6379"
+    # No host ports — Redis is internal-only (backend uses REDIS_HOST=redis).
+    # For local backend outside Docker, temporarily add: ports: ["6379:6379"]
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis-data:/data

@@ -106,6 +106,7 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
+  try {
   const identifier = req.body.identifier || req.body.email || req.body.handle;
   const password = req.body.password;
 
@@ -152,6 +153,10 @@ exports.login = async (req, res) => {
       role: user.role,
     },
   });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ success: false, message: "Login failed. Try again." });
+  }
 };
 
 exports.refresh = async (req, res) => {

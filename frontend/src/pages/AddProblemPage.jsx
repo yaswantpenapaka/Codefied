@@ -5,7 +5,7 @@ export default function AddProblemPage() {
   const [form, setForm] = useState({
     title: "",
     description: "",
-    difficulty: "easy",
+    difficulty: "Easy",
     constraints: "",
     timeLimit: 1000,
     memoryLimit: 256,
@@ -112,9 +112,9 @@ export default function AddProblemPage() {
           onChange={handleChange}
           className="w-full p-3 rounded bg-gray-800"
         >
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
         </select>
         <input
           name="constraints"

@@ -7,8 +7,8 @@ const problemSchema = new mongoose.Schema(
     description: { type: String, required: true },
     difficulty: {
       type: String,
-      enum: ["easy", "medium", "hard"],
-      default: "easy",
+      enum: ["Easy", "Medium", "Hard"],
+      default: "Easy",
     },
     constraints: { type: String, default: "" },
     timeLimit: { type: Number, default: 1000 },
