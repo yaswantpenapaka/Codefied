@@ -1,10 +1,17 @@
 const { verifyAccessToken } = require("../utils/jwt");
 
-module.exports = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
+const attachUser = (decoded) => ({
+  _id: decoded.id,
+  id: decoded.id,
+  handle: decoded.handle,
+  role: decoded.role,
+});
 
-  let token;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
+module.exports = async (req, res, next) => {
+  let token = req.cookies?.accessToken;
+
+  const authHeader = req.headers.authorization;
+  if (!token && authHeader?.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1];
   }
 
@@ -14,12 +21,7 @@ module.exports = async (req, res, next) => {
 
   try {
     const decoded = verifyAccessToken(token);
-    req.user = {
-      _id: decoded.id,
-      id: decoded.id,
-      handle: decoded.handle,
-      role: decoded.role,
-    };
+    req.user = attachUser(decoded);
     next();
   } catch {
     res.status(401).json({ message: "Unauthorized" });

@@ -3,7 +3,16 @@ const User = require("../models/User");
 const { hashPassword, comparePassword } = require("../utils/password");
 const { getSolvedCount } = require("../utils/solvedStats");
 const { signAccessToken, signRefreshToken } = require("../utils/jwt");
-const { getRefreshCookieOptions } = require("../utils/cookies");
+const {
+  getAccessCookieOptions,
+  getRefreshCookieOptions,
+  clearAuthCookieOptions,
+} = require("../utils/cookies");
+
+const setAuthCookies = (res, accessToken, refreshToken) => {
+  res.cookie("accessToken", accessToken, getAccessCookieOptions());
+  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
+};
 
 const findUserByIdentifier = async (identifier) => {
   if (!identifier) return null;
@@ -91,11 +100,10 @@ exports.register = async (req, res) => {
     tokenVersion: user.tokenVersion,
   });
 
-  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
+  setAuthCookies(res, accessToken, refreshToken);
 
   res.status(201).json({
     success: true,
-    accessToken,
     user: {
       id: user._id,
       handle: user.handle,
@@ -141,11 +149,10 @@ exports.login = async (req, res) => {
     tokenVersion: user.tokenVersion,
   });
 
-  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
+  setAuthCookies(res, accessToken, refreshToken);
 
   res.json({
     success: true,
-    accessToken,
     user: {
       id: user._id,
       handle: user.handle,
@@ -176,14 +183,17 @@ exports.refresh = async (req, res) => {
       handle: user.handle,
       role: user.role,
     });
-    res.json({ accessToken });
+    res.cookie("accessToken", accessToken, getAccessCookieOptions());
+    res.json({ success: true });
   } catch {
     res.status(401).json({ message: "Invalid refresh token" });
   }
 };
 
 exports.logout = (req, res) => {
-  res.clearCookie("refreshToken", getRefreshCookieOptions());
+  const clearOptions = clearAuthCookieOptions();
+  res.clearCookie("accessToken", clearOptions);
+  res.clearCookie("refreshToken", clearOptions);
   res.json({ success: true, message: "Logged out" });
 };
 

@@ -1,3 +1,5 @@
+// v1 sandbox: child processes run in the same host/container.
+// v2 roadmap: isolate each submission in a dedicated container.
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -85,7 +87,7 @@ const cleanupDirectory = async (dir) => {
   }
 };
 
-const executeCode = async (code, input = "", language) => {
+const executeCode = async (code, input = "", language, timeoutMs = 10000) => {
   const jobId = uuid();
   const workDir = path.join(os.tmpdir(), "coderunner", jobId);
   fs.mkdirSync(workDir, { recursive: true });
@@ -114,7 +116,7 @@ const executeCode = async (code, input = "", language) => {
           [sourceFile, "-o", executableFile],
           workDir,
           "",
-          10000,
+          timeoutMs,
         );
         if (compileResult.exitCode !== 0) {
           result = {
@@ -131,7 +133,7 @@ const executeCode = async (code, input = "", language) => {
           [],
           workDir,
           input,
-          10000,
+          timeoutMs,
         );
         break;
       }
@@ -141,7 +143,7 @@ const executeCode = async (code, input = "", language) => {
           [sourceFile, "-o", executableFile],
           workDir,
           "",
-          10000,
+          timeoutMs,
         );
         if (compileResult.exitCode !== 0) {
           result = {
@@ -158,7 +160,7 @@ const executeCode = async (code, input = "", language) => {
           [],
           workDir,
           input,
-          10000,
+          timeoutMs,
         );
         break;
       }
@@ -168,7 +170,7 @@ const executeCode = async (code, input = "", language) => {
           ["-d", workDir, sourceFile],
           workDir,
           "",
-          10000,
+          timeoutMs,
         );
         if (compileResult.exitCode !== 0) {
           result = {
@@ -185,7 +187,7 @@ const executeCode = async (code, input = "", language) => {
           ["-cp", workDir, "Main"],
           workDir,
           input,
-          10000,
+          timeoutMs,
         );
         break;
       }
@@ -195,7 +197,7 @@ const executeCode = async (code, input = "", language) => {
           [sourceFile],
           workDir,
           input,
-          10000,
+          timeoutMs,
         );
         break;
       }

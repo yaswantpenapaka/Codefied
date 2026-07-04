@@ -1,5 +1,4 @@
 services:
-  # Optional for local dev only — production uses MongoDB Atlas (free M0 tier)
   mongo:
     image: mongo:7
     container_name: codefied-mongo
@@ -12,7 +11,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: codefied-redis
-    # No host ports — Redis is internal-only (backend uses REDIS_HOST=redis).
+    ports:
+      - "127.0.0.1:6379:6379"
     command:
       [
         "redis-server",
@@ -31,7 +31,9 @@ services:
         limits:
           memory: 96M
 
+  # Optional — production on t3.small uses PM2 + nginx instead (see scripts/setup-t3-small.sh)
   backend:
+    profiles: ["docker"]
     build:
       context: ./backend
       dockerfile: Dockerfile

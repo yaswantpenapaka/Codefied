@@ -11,6 +11,7 @@ import ProblemDetailPage from "./pages/ProblemDetailPage";
 import AddProblemPage from "./pages/AddProblemPage";
 import ProfilePage from "./pages/ProfilePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import SubmissionsPage from "./pages/SubmissionsPage";
 
 function AppShell() {
   const { user, loading } = useAuth();
@@ -86,6 +87,15 @@ function AppShell() {
           element={
             <ProtectedRoute>
               <LeaderboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/submissions"
+          element={
+            <ProtectedRoute>
+              <SubmissionsPage />
             </ProtectedRoute>
           }
         />

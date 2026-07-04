@@ -1,9 +1,16 @@
 const express = require("express");
 const auth = require("../middleware/auth");
-const { runSample, submit } = require("../controllers/submissionController");
+const {
+  runSample,
+  submit,
+  listMySubmissions,
+  getMySubmission,
+} = require("../controllers/submissionController");
 
 const router = express.Router();
 
+router.get("/me", auth, listMySubmissions);
+router.get("/me/:id", auth, getMySubmission);
 router.post("/run/:id", auth, runSample);
 router.post("/submit/:id", auth, submit);
 

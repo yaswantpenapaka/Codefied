@@ -83,6 +83,16 @@ export default function DashboardPage() {
           <p className="text-gray-400">See top solvers on Codefied.</p>
         </Link>
 
+        <Link
+          to="/submissions"
+          className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-indigo-500"
+        >
+          <h2 className="text-xl font-semibold mb-2">Submissions</h2>
+          <p className="text-gray-400">
+            Review your past verdicts and test case results.
+          </p>
+        </Link>
+
         {user?.role === "admin" && (
           <Link
             to="/dashboard/add-problem"

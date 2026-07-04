@@ -196,6 +196,23 @@ export default function ProblemDetailPage() {
                       : " — already solved, score unchanged."}
                   </p>
                 )}
+                {result.verdict && (
+                  <p>
+                    <strong>Verdict:</strong>{" "}
+                    <span
+                      className={
+                        result.verdict === "accepted"
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }
+                    >
+                      {result.verdict
+                        .split("-")
+                        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                        .join(" ")}
+                    </span>
+                  </p>
+                )}
                 <p>
                   <strong>Status:</strong> {result.status}
                 </p>
@@ -205,7 +222,15 @@ export default function ProblemDetailPage() {
                 {result.results?.map((r, i) => (
                   <div key={i} className="mt-2 border-t border-gray-800 pt-2">
                     <p className={r.passed ? "text-green-400" : "text-red-400"}>
-                      Case {i + 1}: {r.passed ? "Passed" : "Failed"}
+                      Case {i + 1}:{" "}
+                      {r.verdict
+                        ? r.verdict
+                            .split("-")
+                            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                            .join(" ")
+                        : r.passed
+                          ? "Passed"
+                          : "Failed"}
                     </p>
                     <pre className="whitespace-pre-wrap text-xs text-gray-400">
                       {r.output}

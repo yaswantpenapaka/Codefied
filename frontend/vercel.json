@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "http://98.88.196.162:4000/api/:path*"
+      "destination": "http://YOUR_NEW_ELASTIC_IP/api/:path*"
     },
     {
       "source": "/(.*)",

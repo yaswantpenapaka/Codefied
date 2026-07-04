@@ -28,6 +28,9 @@ export default function Navbar() {
         <Link to="/leaderboard" className="text-gray-300 hover:text-white">
           Leaderboard
         </Link>
+        <Link to="/submissions" className="text-gray-300 hover:text-white">
+          Submissions
+        </Link>
         {user?.role === "admin" && (
           <Link
             to="/dashboard/add-problem"

@@ -7,37 +7,31 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const init = async () => {
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await api.get("/auth/me");
-        setUser(res.data.user);
-      } catch {
-        setUser(null);
-        localStorage.removeItem("accessToken");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    init();
-  }, []);
-
   const loadCurrentUser = async () => {
     const me = await api.get("/auth/me");
     setUser(me.data.user);
     return me.data.user;
   };
 
+  const restoreSession = async () => {
+    try {
+      await loadCurrentUser();
+    } catch {
+      try {
+        await api.post("/auth/refresh");
+        await loadCurrentUser();
+      } catch {
+        setUser(null);
+      }
+    }
+  };
+
+  useEffect(() => {
+    restoreSession().finally(() => setLoading(false));
+  }, []);
+
   const login = async (identifier, password) => {
     const res = await api.post("/auth/login", { identifier, password });
-    localStorage.setItem("accessToken", res.data.accessToken);
     try {
       await loadCurrentUser();
     } catch {
@@ -53,7 +47,6 @@ export function AuthProvider({ children }) {
       password,
       confirmPassword,
     });
-    localStorage.setItem("accessToken", res.data.accessToken);
     try {
       await loadCurrentUser();
     } catch {
@@ -66,7 +59,6 @@ export function AuthProvider({ children }) {
     try {
       await api.post("/auth/logout");
     } catch {}
-    localStorage.removeItem("accessToken");
     setUser(null);
   };
 

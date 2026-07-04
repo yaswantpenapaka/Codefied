@@ -6,7 +6,7 @@ const isCrossOriginDeployment = () => {
   );
 };
 
-const getRefreshCookieOptions = () => {
+const getBaseCookieOptions = () => {
   const crossOrigin = isCrossOriginDeployment();
   const secure =
     process.env.COOKIE_SECURE === "true" ||
@@ -16,8 +16,24 @@ const getRefreshCookieOptions = () => {
     httpOnly: true,
     secure,
     sameSite: crossOrigin ? "none" : "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/",
   };
 };
 
-module.exports = { getRefreshCookieOptions };
+const getAccessCookieOptions = () => ({
+  ...getBaseCookieOptions(),
+  maxAge: 15 * 60 * 1000,
+});
+
+const getRefreshCookieOptions = () => ({
+  ...getBaseCookieOptions(),
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
+
+const clearAuthCookieOptions = () => getBaseCookieOptions();
+
+module.exports = {
+  getAccessCookieOptions,
+  getRefreshCookieOptions,
+  clearAuthCookieOptions,
+};
