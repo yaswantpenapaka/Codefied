@@ -1,15 +1,21 @@
+const User = require("../models/User");
 const { getSolvedCount, getLeaderboard } = require("../utils/solvedStats");
 
 exports.getProfile = async (req, res) => {
-  const solvedCount = await getSolvedCount(req.user._id);
+  const user = await User.findById(req.user._id).select("handle email role");
+  if (!user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const solvedCount = await getSolvedCount(user._id);
 
   return res.json({
     success: true,
     user: {
-      id: req.user._id,
-      handle: req.user.handle,
-      email: req.user.email,
-      role: req.user.role,
+      id: user._id,
+      handle: user.handle,
+      email: user.email,
+      role: user.role,
       solvedCount,
     },
   });

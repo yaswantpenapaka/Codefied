@@ -12,8 +12,6 @@ const userRoutes = require("./routes/userRoutes");
 const executeCode = require("./executeCode");
 const auth = require("./middleware/auth");
 const { aiReviewRateLimit } = require("./middleware/rateLimit");
-const { aiReviewQueue, aiReviewQueueEvents } = require("./jobs/aiReviewJob");
-
 const { aiCodereview } = require("./aiCodereview");
 
 connectDB();
@@ -48,6 +46,14 @@ app.get("/", (req, res) => {
   res.send("Hello, World! CodeRunner backend with custom input is running.");
 });
 
+app.get("/api/health", (req, res) => {
+  res.json({
+    ok: true,
+    uptime: process.uptime(),
+    memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+  });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/problems", problemRoutes);
@@ -74,13 +80,8 @@ const handleAiReview = async (req, res) => {
   }
 
   try {
-    const job = await aiReviewQueue.add("review", {
-      code,
-      userId: req.user?._id?.toString() || "anonymous",
-    });
-
-    const result = await job.waitUntilFinished(aiReviewQueueEvents);
-    res.json({ aiReview: result.review });
+    const review = await aiCodereview(code);
+    res.json({ aiReview: review });
   } catch (error) {
     console.error("Error in AI review queue:", error);
     res.status(500).json({ message: error.message || "AI review failed" });

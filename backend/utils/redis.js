@@ -1,10 +1,16 @@
 const Redis = require("ioredis");
 const { buildRedisOptions } = require("./redisConfig");
 
-const client = new Redis(buildRedisOptions());
+let client = null;
 
-client.on("error", (err) => {
-  console.error("Redis error:", err);
-});
+function getRedis() {
+  if (!client) {
+    client = new Redis(buildRedisOptions());
+    client.on("error", (err) => {
+      console.error("Redis error:", err.message);
+    });
+  }
+  return client;
+}
 
-module.exports = client;
+module.exports = getRedis;

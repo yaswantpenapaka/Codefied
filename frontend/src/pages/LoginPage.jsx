@@ -6,17 +6,27 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
       await login(identifier, password);
       navigate("/dashboard");
     } catch (err) {
-      setError(err?.response?.data?.message || "Login failed");
+      const isTimeout = err?.code === "ECONNABORTED";
+      const isNetwork = !err?.response;
+      setError(
+        isTimeout || isNetwork
+          ? "Server is slow or unreachable. Wait a minute and try again, or reboot the EC2 instance from AWS Console."
+          : err?.response?.data?.message || "Login failed",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,8 +64,11 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button className="w-full bg-indigo-600 py-2 rounded font-semibold">
-          Login
+        <button
+          disabled={loading}
+          className="w-full bg-indigo-600 py-2 rounded font-semibold disabled:opacity-60"
+        >
+          {loading ? "Signing in..." : "Login"}
         </button>
 
         <p className="text-sm text-gray-400 mt-4">

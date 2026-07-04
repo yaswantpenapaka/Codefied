@@ -93,8 +93,6 @@ exports.register = async (req, res) => {
 
   res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
 
-  const solvedCount = await getSolvedCount(user._id);
-
   res.status(201).json({
     success: true,
     accessToken,
@@ -103,7 +101,6 @@ exports.register = async (req, res) => {
       handle: user.handle,
       email: user.email,
       role: user.role,
-      solvedCount,
     },
   });
 };
@@ -146,8 +143,6 @@ exports.login = async (req, res) => {
 
   res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
 
-  const solvedCount = await getSolvedCount(user._id);
-
   res.json({
     success: true,
     accessToken,
@@ -156,7 +151,6 @@ exports.login = async (req, res) => {
       handle: user.handle,
       email: user.email,
       role: user.role,
-      solvedCount,
     },
   });
   } catch (err) {
@@ -194,15 +188,20 @@ exports.logout = (req, res) => {
 };
 
 exports.me = async (req, res) => {
-  const solvedCount = await getSolvedCount(req.user._id);
+  const user = await User.findById(req.user._id).select("handle email role");
+  if (!user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const solvedCount = await getSolvedCount(user._id);
 
   res.json({
     success: true,
     user: {
-      id: req.user._id,
-      handle: req.user.handle,
-      email: req.user.email,
-      role: req.user.role,
+      id: user._id,
+      handle: user.handle,
+      email: user.email,
+      role: user.role,
       solvedCount,
     },
   });

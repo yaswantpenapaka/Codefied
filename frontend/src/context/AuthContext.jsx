@@ -29,10 +29,20 @@ export function AuthProvider({ children }) {
     init();
   }, []);
 
+  const loadCurrentUser = async () => {
+    const me = await api.get("/auth/me");
+    setUser(me.data.user);
+    return me.data.user;
+  };
+
   const login = async (identifier, password) => {
     const res = await api.post("/auth/login", { identifier, password });
     localStorage.setItem("accessToken", res.data.accessToken);
-    setUser(res.data.user);
+    try {
+      await loadCurrentUser();
+    } catch {
+      setUser(res.data.user);
+    }
     return res.data;
   };
 
@@ -44,7 +54,11 @@ export function AuthProvider({ children }) {
       confirmPassword,
     });
     localStorage.setItem("accessToken", res.data.accessToken);
-    setUser(res.data.user);
+    try {
+      await loadCurrentUser();
+    } catch {
+      setUser(res.data.user);
+    }
     return res.data;
   };
 

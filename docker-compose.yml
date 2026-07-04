@@ -13,11 +13,23 @@ services:
     image: redis:7-alpine
     container_name: codefied-redis
     # No host ports — Redis is internal-only (backend uses REDIS_HOST=redis).
-    # For local backend outside Docker, temporarily add: ports: ["6379:6379"]
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redis-data:/data
+    command:
+      [
+        "redis-server",
+        "--maxmemory",
+        "64mb",
+        "--maxmemory-policy",
+        "allkeys-lru",
+        "--save",
+        "",
+        "--appendonly",
+        "no",
+      ]
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 96M
 
   backend:
     build:
@@ -33,10 +45,16 @@ services:
       PORT: 4000
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      NODE_OPTIONS: --max-old-space-size=384
     ports:
       - "4000:4000"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
 volumes:
   mongo-data:
-  redis-data:

@@ -1,4 +1,3 @@
-const User = require("../models/User");
 const { verifyAccessToken } = require("../utils/jwt");
 
 module.exports = async (req, res, next) => {
@@ -15,9 +14,12 @@ module.exports = async (req, res, next) => {
 
   try {
     const decoded = verifyAccessToken(token);
-    const user = await User.findById(decoded.id);
-    if (!user) return res.status(401).json({ message: "Unauthorized" });
-    req.user = user;
+    req.user = {
+      _id: decoded.id,
+      id: decoded.id,
+      handle: decoded.handle,
+      role: decoded.role,
+    };
     next();
   } catch {
     res.status(401).json({ message: "Unauthorized" });
