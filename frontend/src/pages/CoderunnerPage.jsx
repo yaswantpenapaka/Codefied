@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import Editor from "@monaco-editor/react";
 import api from "../services/api";
+import CodeEditor from "../components/CodeEditor";
 
 const LANGUAGES = [
   { label: "C", value: "c" },
@@ -15,13 +15,6 @@ const DEFAULT_CODE = {
   cpp: `#include <iostream>\nusing namespace std;\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}`,
   java: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`,
   python: `print("Hello, World!")`,
-};
-
-const MONACO_LANGUAGE = {
-  c: "c",
-  cpp: "cpp",
-  java: "java",
-  python: "python",
 };
 
 export default function CoderunnerPage() {
@@ -87,21 +80,7 @@ export default function CoderunnerPage() {
 
       <div className="grid lg:grid-cols-2 gap-4">
         <div>
-          <div className="rounded-lg overflow-hidden border border-gray-800">
-            <Editor
-              height="420px"
-              language={MONACO_LANGUAGE[language]}
-              value={code}
-              onChange={(value) => setCode(value || "")}
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                automaticLayout: true,
-                tabSize: 2,
-              }}
-            />
-          </div>
+          <CodeEditor language={language} value={code} onChange={setCode} />
           <div className="mt-3 flex gap-3">
             <button
               onClick={handleRun}

@@ -36,6 +36,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Prevent Vercel Toolbar from capturing keys while typing in Monaco editor
+      window.addEventListener(
+        "keydown",
+        (e) => {
+          if (
+            e.target.closest(".monaco-editor") ||
+            e.target.closest("[data-editor-shell]")
+          ) {
+            e.stopImmediatePropagation();
+          }
+        },
+        true,
+      );
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

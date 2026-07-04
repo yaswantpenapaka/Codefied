@@ -1,13 +1,40 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [stats, setStats] = useState({ solved: 0, total: 0 });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get("/problems");
+        setStats({
+          solved: res.data.solvedCount ?? 0,
+          total: res.data.totalCount ?? 0,
+        });
+      } catch {
+        setStats({ solved: user?.solvedCount ?? 0, total: 0 });
+      }
+    };
+    load();
+  }, [user?.solvedCount]);
+
+  const openCount = stats.total - stats.solved;
 
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-      <p className="text-gray-400 mb-6">Welcome, {user?.handle}</p>
+      <p className="text-gray-400 mb-2">Welcome, {user?.handle}</p>
+      <p className="text-sm mb-6 flex flex-wrap gap-3">
+        <span className="text-green-400 font-semibold">
+          ✓ Solved: {stats.solved}
+        </span>
+        <span className="text-gray-400">Open: {openCount}</span>
+        <span className="text-gray-500">Total: {stats.total}</span>
+      </p>
 
       <div className="grid md:grid-cols-3 gap-4">
         <Link

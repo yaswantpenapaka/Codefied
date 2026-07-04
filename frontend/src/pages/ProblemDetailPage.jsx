@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import Editor from "@monaco-editor/react";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import CodeEditor from "../components/CodeEditor";
 
 export default function ProblemDetailPage() {
   const { problemId } = useParams();
+  const { setUser } = useAuth();
   const [problem, setProblem] = useState(null);
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("cpp");
@@ -22,6 +24,11 @@ export default function ProblemDetailPage() {
     };
     load();
   }, [problemId]);
+
+  const refreshUserStats = async () => {
+    const me = await api.get("/auth/me");
+    setUser(me.data.user);
+  };
 
   const handleRun = async () => {
     setLoading(true);
@@ -45,6 +52,10 @@ export default function ProblemDetailPage() {
         language,
       });
       setResult(res.data);
+      if (res.data.accepted) {
+        setProblem((prev) => (prev ? { ...prev, solved: true } : prev));
+        await refreshUserStats();
+      }
     } finally {
       setLoading(false);
     }
@@ -55,8 +66,30 @@ export default function ProblemDetailPage() {
   return (
     <div className="p-6 grid lg:grid-cols-2 gap-6">
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <h1 className="text-2xl font-bold mb-3">{problem.title}</h1>
-        <p className="text-sm text-gray-400 mb-3">{problem.difficulty}</p>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <h1 className="text-2xl font-bold">{problem.title}</h1>
+          {problem.solved && (
+            <span className="shrink-0 inline-flex items-center gap-1 text-green-400 font-bold text-sm bg-green-900/50 border border-green-600 px-3 py-1 rounded-full">
+              <span className="text-lg">✓</span> Solved
+            </span>
+          )}
+        </div>
+
+        <p className="text-sm text-gray-400 mb-2 capitalize">{problem.difficulty}</p>
+
+        {problem.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {problem.tags.map((tag) => (
+              <span
+                key={tag}
+                className="text-xs px-2 py-0.5 rounded-full bg-indigo-900/40 text-indigo-300 border border-indigo-800"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         <div className="prose prose-invert max-w-none text-sm">
           <ReactMarkdown>{problem.description}</ReactMarkdown>
         </div>
@@ -137,29 +170,7 @@ export default function ProblemDetailPage() {
           </button>
         </div>
 
-        <div className="rounded-lg overflow-hidden border border-gray-800">
-          <Editor
-            height="420px"
-            language={
-              language === "cpp"
-                ? "cpp"
-                : language === "c"
-                  ? "c"
-                  : language === "java"
-                    ? "java"
-                    : "python"
-            }
-            value={code}
-            onChange={(value) => setCode(value || "")}
-            theme="vs-dark"
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              automaticLayout: true,
-              tabSize: 2,
-            }}
-          />
-        </div>
+        <CodeEditor language={language} value={code} onChange={setCode} />
 
         <div>
           <h3 className="text-sm font-semibold mb-2">Custom Input</h3>
@@ -177,6 +188,11 @@ export default function ProblemDetailPage() {
           ) : (
             result && (
               <div className="text-sm">
+                {result.accepted && (
+                  <p className="text-green-400 font-bold mb-2">
+                    ✓ Accepted — counts toward your solved total!
+                  </p>
+                )}
                 <p>
                   <strong>Status:</strong> {result.status}
                 </p>
@@ -185,7 +201,7 @@ export default function ProblemDetailPage() {
                 </p>
                 {result.results?.map((r, i) => (
                   <div key={i} className="mt-2 border-t border-gray-800 pt-2">
-                    <p>
+                    <p className={r.passed ? "text-green-400" : "text-red-400"}>
                       Case {i + 1}: {r.passed ? "Passed" : "Failed"}
                     </p>
                     <pre className="whitespace-pre-wrap text-xs text-gray-400">

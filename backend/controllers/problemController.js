@@ -4,26 +4,38 @@ const slugify = require("slugify");
 
 exports.listProblems = async (req, res) => {
   const Submission = require("../models/Submission");
+  const mongoose = require("mongoose");
   const problems = await Problem.find().sort({ createdAt: -1 });
 
-  const solvedProblems = await Submission.find(
-    { userId: req.user._id, verdict: "accepted" },
-    { problemId: 1 },
-  ).lean();
-  const solvedIds = new Set(solvedProblems.map((s) => s.problemId.toString()));
+  const userId = new mongoose.Types.ObjectId(req.user._id);
+  const solvedAgg = await Submission.aggregate([
+    { $match: { userId, verdict: "accepted" } },
+    { $group: { _id: "$problemId" } },
+  ]);
+  const solvedIds = new Set(solvedAgg.map((s) => s._id.toString()));
 
   const problemsWithStatus = problems.map((p) => ({
     ...p.toObject(),
     solved: solvedIds.has(p._id.toString()),
   }));
 
-  res.json({ problems: problemsWithStatus });
+  const solvedCount = solvedIds.size;
+
+  res.json({ problems: problemsWithStatus, solvedCount, totalCount: problems.length });
 };
 
 exports.getProblem = async (req, res) => {
+  const Submission = require("../models/Submission");
   const problem = await Problem.findById(req.params.id);
   if (!problem) return res.status(404).json({ message: "Problem not found" });
-  res.json({ problem });
+
+  const solved = await Submission.exists({
+    userId: req.user._id,
+    problemId: problem._id,
+    verdict: "accepted",
+  });
+
+  res.json({ problem: { ...problem.toObject(), solved: Boolean(solved) } });
 };
 
 exports.createProblem = async (req, res) => {

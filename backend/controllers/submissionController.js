@@ -53,6 +53,13 @@ exports.submit = async (req, res) => {
     problemId: problem._id,
     isHidden: true,
   }).sort({ order: 1 });
+
+  if (!hiddenCases.length) {
+    return res.status(400).json({
+      message: "This problem has no hidden test cases configured yet.",
+    });
+  }
+
   const results = [];
   let passed = 0;
 
@@ -79,5 +86,12 @@ exports.submit = async (req, res) => {
     results,
   });
 
-  res.json({ status: "submit", passed, total: hiddenCases.length, results });
+  const accepted = passed === hiddenCases.length;
+  res.json({
+    status: "submit",
+    passed,
+    total: hiddenCases.length,
+    accepted,
+    results,
+  });
 };
