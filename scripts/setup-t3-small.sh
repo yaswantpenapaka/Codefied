@@ -88,6 +88,7 @@ echo "==> Redis container (localhost:6379 only)"
 docker compose up -d redis
 
 echo "==> Backend dependencies"
+cp -f .env backend/.env
 cd backend
 if [ -f package-lock.json ]; then
   npm ci --omit=dev

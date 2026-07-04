@@ -28,7 +28,12 @@ if [ "$SWAP_MB" -lt 512 ]; then
   WARN=1
 fi
 
-PUBLIC_IP=$(curl -sf --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 || echo "unknown")
+IMDS_TOKEN=$(curl -sf -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 60" 2>/dev/null || true)
+if [ -n "$IMDS_TOKEN" ]; then
+  PUBLIC_IP=$(curl -sf -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "unknown")
+else
+  PUBLIC_IP=$(curl -sf --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 || echo "unknown")
+fi
 echo "Public IP: $PUBLIC_IP"
 
 if curl -sf --max-time 3 "http://127.0.0.1:4000/api/health" >/dev/null 2>&1; then
@@ -52,8 +57,12 @@ else
   echo "Redis container: not running"
 fi
 
-if pm2 pid codefied-api >/dev/null 2>&1; then
-  echo "PM2 codefied-api: running"
+PM2_STATUS=$(pm2 jlist 2>/dev/null | grep -o '"name":"codefied-api"[^}]*"status":"[^"]*"' | head -1 || true)
+if echo "$PM2_STATUS" | grep -q '"status":"online"'; then
+  echo "PM2 codefied-api: online"
+elif pm2 pid codefied-api >/dev/null 2>&1; then
+  echo "PM2 codefied-api: process exists but may be crash-looping — run: pm2 logs codefied-api"
+  WARN=1
 else
   echo "PM2 codefied-api: not running"
   WARN=1

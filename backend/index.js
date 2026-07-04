@@ -1,5 +1,8 @@
+const path = require("path");
 const dotenv = require("dotenv");
-dotenv.config();
+// PM2 runs from backend/ — load repo-root .env (setup-t3-small.sh writes ~/codefied/.env)
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 const express = require("express");
 const cors = require("cors");
