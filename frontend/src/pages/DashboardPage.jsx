@@ -1,28 +1,36 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import { deriveProblemStats } from "../utils/problemStats";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ solved: 0, total: 0 });
+  const [stats, setStats] = useState({ solved: 0, total: 0, open: 0 });
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await api.get("/problems");
-        setStats({
-          solved: res.data.solvedCount ?? 0,
-          total: res.data.totalCount ?? 0,
-        });
-      } catch {
-        setStats({ solved: user?.solvedCount ?? 0, total: 0 });
-      }
-    };
-    load();
+  const load = useCallback(async () => {
+    try {
+      const res = await api.get("/problems");
+      const problemsList = res.data.problems || [];
+      setStats(
+        deriveProblemStats(
+          problemsList,
+          res.data.solvedCount,
+          res.data.totalCount,
+        ),
+      );
+    } catch {
+      const solved = user?.solvedCount ?? 0;
+      setStats({ solved, total: 0, open: 0 });
+    }
   }, [user?.solvedCount]);
 
-  const openCount = stats.total - stats.solved;
+  useEffect(() => {
+    load();
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [load]);
 
   return (
     <div className="p-8">
@@ -32,7 +40,7 @@ export default function DashboardPage() {
         <span className="text-green-400 font-semibold">
           ✓ Solved: {stats.solved}
         </span>
-        <span className="text-gray-400">Open: {openCount}</span>
+        <span className="text-gray-400">Open: {stats.open}</span>
         <span className="text-gray-500">Total: {stats.total}</span>
       </p>
 

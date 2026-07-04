@@ -190,7 +190,10 @@ export default function ProblemDetailPage() {
               <div className="text-sm">
                 {result.accepted && (
                   <p className="text-green-400 font-bold mb-2">
-                    ✓ Accepted — counts toward your solved total!
+                    ✓ Accepted
+                    {result.newlySolved
+                      ? " — counts toward your solved total!"
+                      : " — already solved, score unchanged."}
                   </p>
                 )}
                 <p>

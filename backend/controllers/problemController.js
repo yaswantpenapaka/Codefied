@@ -1,18 +1,12 @@
 const Problem = require("../models/Problem");
 const TestCase = require("../models/TestCase");
+const Submission = require("../models/Submission");
 const slugify = require("slugify");
+const { getSolvedProblemIds } = require("../utils/solvedStats");
 
 exports.listProblems = async (req, res) => {
-  const Submission = require("../models/Submission");
-  const mongoose = require("mongoose");
   const problems = await Problem.find().sort({ createdAt: -1 });
-
-  const userId = new mongoose.Types.ObjectId(req.user._id);
-  const solvedAgg = await Submission.aggregate([
-    { $match: { userId, verdict: "accepted" } },
-    { $group: { _id: "$problemId" } },
-  ]);
-  const solvedIds = new Set(solvedAgg.map((s) => s._id.toString()));
+  const solvedIds = await getSolvedProblemIds(req.user._id);
 
   const problemsWithStatus = problems.map((p) => ({
     ...p.toObject(),
@@ -20,12 +14,12 @@ exports.listProblems = async (req, res) => {
   }));
 
   const solvedCount = solvedIds.size;
+  const totalCount = problems.length;
 
-  res.json({ problems: problemsWithStatus, solvedCount, totalCount: problems.length });
+  res.json({ problems: problemsWithStatus, solvedCount, totalCount });
 };
 
 exports.getProblem = async (req, res) => {
-  const Submission = require("../models/Submission");
   const problem = await Problem.findById(req.params.id);
   if (!problem) return res.status(404).json({ message: "Problem not found" });
 

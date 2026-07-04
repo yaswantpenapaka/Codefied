@@ -60,6 +60,12 @@ exports.submit = async (req, res) => {
     });
   }
 
+  const alreadySolved = await Submission.exists({
+    userId: req.user._id,
+    problemId: problem._id,
+    verdict: "accepted",
+  });
+
   const results = [];
   let passed = 0;
 
@@ -87,11 +93,14 @@ exports.submit = async (req, res) => {
   });
 
   const accepted = passed === hiddenCases.length;
+  const newlySolved = accepted && !alreadySolved;
+
   res.json({
     status: "submit",
     passed,
     total: hiddenCases.length,
     accepted,
+    newlySolved,
     results,
   });
 };

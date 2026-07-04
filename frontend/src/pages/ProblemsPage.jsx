@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
+import { deriveProblemStats } from "../utils/problemStats";
 
 const difficultyStyles = {
   Easy: "bg-green-900/40 text-green-300 border-green-700",
@@ -10,16 +11,21 @@ const difficultyStyles = {
 
 export default function ProblemsPage() {
   const [problems, setProblems] = useState([]);
-  const [solvedCount, setSolvedCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
+  const [stats, setStats] = useState({ solved: 0, total: 0, open: 0 });
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
       const res = await api.get("/problems");
-      setProblems(res.data.problems || []);
-      setSolvedCount(res.data.solvedCount ?? 0);
-      setTotalCount(res.data.totalCount ?? res.data.problems?.length ?? 0);
+      const problemsList = res.data.problems || [];
+      setProblems(problemsList);
+      setStats(
+        deriveProblemStats(
+          problemsList,
+          res.data.solvedCount,
+          res.data.totalCount,
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -34,8 +40,6 @@ export default function ProblemsPage() {
 
   if (loading) return <div className="p-6">Loading problems...</div>;
 
-  const openCount = totalCount - solvedCount;
-
   return (
     <div className="p-6 max-w-5xl">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
@@ -47,13 +51,13 @@ export default function ProblemsPage() {
         </div>
         <div className="flex gap-3 text-sm">
           <span className="px-3 py-1.5 rounded-lg bg-green-900/30 border border-green-700 text-green-300 font-semibold">
-            ✓ Solved: {solvedCount}
+            ✓ Solved: {stats.solved}
           </span>
           <span className="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300">
-            Open: {openCount}
+            Open: {stats.open}
           </span>
           <span className="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-400">
-            Total: {totalCount}
+            Total: {stats.total}
           </span>
         </div>
       </div>
