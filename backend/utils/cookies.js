@@ -6,8 +6,22 @@ const isCrossOriginDeployment = () => {
   );
 };
 
+const getSameSite = () => {
+  const explicit = process.env.COOKIE_SAME_SITE;
+  if (explicit === "none" || explicit === "lax" || explicit === "strict") {
+    return explicit;
+  }
+  // Vercel proxies /api on the same domain as the SPA — lax works everywhere
+  // (Safari/Firefox often block or mishandle SameSite=None even on same-site).
+  if (isCrossOriginDeployment()) {
+    return "lax";
+  }
+  return "lax";
+};
+
 const getBaseCookieOptions = () => {
   const crossOrigin = isCrossOriginDeployment();
+  const sameSite = getSameSite();
   const secure =
     process.env.COOKIE_SECURE === "true" ||
     (crossOrigin && process.env.COOKIE_SECURE !== "false");
@@ -15,7 +29,7 @@ const getBaseCookieOptions = () => {
   return {
     httpOnly: true,
     secure,
-    sameSite: crossOrigin ? "none" : "lax",
+    sameSite,
     path: "/",
   };
 };

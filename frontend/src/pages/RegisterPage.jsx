@@ -8,17 +8,27 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
       await register(handle, email, password, confirmPassword);
       navigate("/dashboard");
     } catch (err) {
-      setError(err?.response?.data?.message || "Registration failed");
+      const isTimeout = err?.code === "ECONNABORTED";
+      const isNetwork = !err?.response;
+      setError(
+        isTimeout || isNetwork
+          ? "Cannot reach the server. Use https://codefied-nine.vercel.app, allow cookies, and try Chrome or Firefox."
+          : err?.response?.data?.message || "Registration failed",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,8 +72,11 @@ export default function RegisterPage() {
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
 
-        <button className="w-full bg-indigo-600 py-2 rounded font-semibold">
-          Register
+        <button
+          disabled={loading}
+          className="w-full bg-indigo-600 py-2 rounded font-semibold disabled:opacity-60"
+        >
+          {loading ? "Creating account..." : "Register"}
         </button>
 
         <p className="text-sm text-gray-400 mt-4">

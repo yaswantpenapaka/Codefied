@@ -30,13 +30,22 @@ export function AuthProvider({ children }) {
     restoreSession().finally(() => setLoading(false));
   }, []);
 
-  const login = async (identifier, password) => {
-    const res = await api.post("/auth/login", { identifier, password });
+  const establishSession = async (fallbackUser) => {
     try {
       await loadCurrentUser();
-    } catch {
-      setUser(res.data.user);
+    } catch (err) {
+      if (fallbackUser) {
+        setUser(fallbackUser);
+      }
+      throw new Error(
+        "Account created but session cookies were blocked. Allow cookies for this site and try logging in again.",
+      );
     }
+  };
+
+  const login = async (identifier, password) => {
+    const res = await api.post("/auth/login", { identifier, password });
+    await establishSession(res.data.user);
     return res.data;
   };
 
@@ -47,11 +56,7 @@ export function AuthProvider({ children }) {
       password,
       confirmPassword,
     });
-    try {
-      await loadCurrentUser();
-    } catch {
-      setUser(res.data.user);
-    }
+    await establishSession(res.data.user);
     return res.data;
   };
 

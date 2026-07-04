@@ -21,9 +21,10 @@ export default function LoginPage() {
       const isTimeout = err?.code === "ECONNABORTED";
       const isNetwork = !err?.response;
       setError(
-        isTimeout || isNetwork
-          ? "Server is slow or unreachable. Wait a minute and try again, or reboot the EC2 instance from AWS Console."
-          : err?.response?.data?.message || "Login failed",
+        err?.message ||
+          (isTimeout || isNetwork
+            ? "Cannot reach the server. Use https://codefied-nine.vercel.app, allow cookies, and try Chrome or Firefox."
+            : err?.response?.data?.message || "Login failed"),
       );
     } finally {
       setLoading(false);

@@ -83,6 +83,9 @@ fi
 if ! grep -q '^COOKIE_SECURE=' .env; then
   echo 'COOKIE_SECURE=true' >> .env
 fi
+if ! grep -q '^COOKIE_SAME_SITE=' .env; then
+  echo 'COOKIE_SAME_SITE=lax' >> .env
+fi
 
 echo "==> Redis container (localhost:6379 only)"
 docker compose up -d redis
