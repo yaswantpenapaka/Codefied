@@ -51,10 +51,18 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
+  const executeCodeModule = require("./executeCode");
   res.json({
     ok: true,
     uptime: process.uptime(),
     memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    sandbox: {
+      version: 2,
+      compileTimeoutMs: Number(process.env.COMPILE_TIMEOUT_MS) || 15000,
+      separateCompileTimeout: true,
+      compileOncePerSubmission:
+        typeof executeCodeModule.executeCodeCases === "function",
+    },
   });
 });
 
