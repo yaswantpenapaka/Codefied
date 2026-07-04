@@ -38,10 +38,27 @@ echo "Public IP: $PUBLIC_IP"
 
 if curl -sf --max-time 3 "http://127.0.0.1:4000/api/health" >/dev/null 2>&1; then
   echo "PM2 backend: OK (localhost:4000)"
-elif curl -sf --max-time 3 "http://127.0.0.1/api/health" >/dev/null 2>&1; then
-  echo "Nginx + backend: OK (localhost:80)"
+  BACKEND_OK=1
 else
-  echo "Backend health: NOT REACHABLE locally"
+  echo "PM2 backend: NOT REACHABLE (localhost:4000)"
+  BACKEND_OK=0
+  WARN=1
+fi
+
+if curl -sf --max-time 3 "http://127.0.0.1/api/health" >/dev/null 2>&1; then
+  echo "Nginx proxy: OK (localhost:80)"
+elif [ "$BACKEND_OK" -eq 1 ]; then
+  echo "Nginx proxy: backend up but :80 not responding"
+  WARN=1
+else
+  echo "Nginx proxy: NOT REACHABLE (localhost:80)"
+  WARN=1
+fi
+
+if [ "$PUBLIC_IP" != "unknown" ] && curl -sf --max-time 5 "http://${PUBLIC_IP}/api/health" >/dev/null 2>&1; then
+  echo "External health: OK (http://${PUBLIC_IP}/api/health)"
+else
+  echo "External health: check security group allows TCP 80"
   WARN=1
 fi
 
@@ -57,11 +74,14 @@ else
   echo "Redis container: not running"
 fi
 
-PM2_STATUS=$(pm2 jlist 2>/dev/null | grep -o '"name":"codefied-api"[^}]*"status":"[^"]*"' | head -1 || true)
-if echo "$PM2_STATUS" | grep -q '"status":"online"'; then
-  echo "PM2 codefied-api: online"
+PM2_STATE=$(pm2 describe codefied-api 2>/dev/null | awk '/status/{print $4}' | head -1 || true)
+if [ "$BACKEND_OK" -eq 1 ]; then
+  echo "PM2 codefied-api: healthy (health endpoint responding)"
+elif [ "$PM2_STATE" = "online" ]; then
+  echo "PM2 codefied-api: online but health check failed — run: pm2 logs codefied-api"
+  WARN=1
 elif pm2 pid codefied-api >/dev/null 2>&1; then
-  echo "PM2 codefied-api: process exists but may be crash-looping — run: pm2 logs codefied-api"
+  echo "PM2 codefied-api: process exists but unhealthy — run: pm2 logs codefied-api"
   WARN=1
 else
   echo "PM2 codefied-api: not running"
